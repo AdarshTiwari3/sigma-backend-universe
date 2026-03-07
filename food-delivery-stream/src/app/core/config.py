@@ -1,0 +1,78 @@
+from enum import StrEnum
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from src.shared.logger.log_level import LogLevel
+
+
+class Environment(StrEnum):
+    DEVELOPMENT = "development"
+    PRODUCTION = "production"
+    TESTING = "testing"
+
+
+class Settings(BaseSettings):
+    """
+    Application configuration loaded from environment variables.
+
+    Supports loading from:
+    - .env file (development)
+    - system environment variables (production)
+    """
+
+    # --- Project Metadata ---
+    PROJECT_NAME: str = "FoodDeliveryStream"
+    VERSION: str = "1.0.0"
+    ENVIRONMENT: Environment = Environment.DEVELOPMENT
+
+    # --- Logger Configuration ---
+    # This feeds directly into our StructlogProvider
+    LOG_LEVEL: LogLevel = LogLevel.INFO
+
+    # --- OTel Configuration ---
+    OTEL_SERVICE_NAME: str = "order-stream-service"
+    OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None
+
+    # --- Pydantic Settings Config ---
+    # This tells Pydantic to look for a .env file first
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True
+    )
+
+    @property
+    def is_dev(self) -> bool:
+        """Helper to check if we are in development mode."""
+        return self.ENVIRONMENT == Environment.DEVELOPMENT
+
+    @property
+    def is_prod(self) -> bool:
+        """Check if running in production."""
+        return self.ENVIRONMENT == Environment.PRODUCTION
+
+    @property
+    def is_test(self) -> bool:
+        """Check if running in test environment."""
+        return self.ENVIRONMENT == Environment.TESTING
+
+    @property
+    def debug(self) -> bool:
+        """Enable debug mode automatically in development."""
+        return self.is_dev
+
+
+# -----------------------------
+# Cached Settings Instance
+# -----------------------------
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Returns cached settings instance.
+
+    Prevents reloading env variables multiple times.
+    """
+    return Settings()
+
+
+# Global settings object
+settings = get_settings()
