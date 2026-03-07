@@ -11,4 +11,4 @@ An event-driven microservice for real-time order processing using FastAPI and Ka
 * **Type Safety**: 100% MyPy strict coverage.
 
 ## 🛠️ Getting Started
-To set up your local development environment, please follow the detailed steps in [SETUP.md](./SETUP.md).
+To set up your local development environment, please follow the detailed steps in [SETUP.md](https://github.com/AdarshTiwari3/sigma-backend-universe/blob/dev/food-delivery-stream/SETUP_GUIDE.md).
