@@ -1,0 +1,62 @@
+# --- Python Architecture ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- UV & Environments ---
+.venv/
+uv.lock
+# Note: In some teams, uv.lock is committed to ensure parity. 
+# In 2026 PBCs, we COMMIT uv.lock but IGNORE .venv.
+
+# --- Environment Secrets (CRITICAL) ---
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# --- Database & Persistence ---
+*.db
+*.sqlite3
+# If using local Postgres volumes
+.docker-data/
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- Testing & Quality ---
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.log
