@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Ruff (Linting & Formatting)
+        run: uv run ruff check . && uv run ruff format --check .
+
+      - name: Run Mypy (Type Checking)
+        run: uv run mypy src/app
+
+      - name: Run Bandit (Security Scan)
+        run: uv run bandit -r src/app
+
+      - name: Run Tests
+        run: uv run pytest
