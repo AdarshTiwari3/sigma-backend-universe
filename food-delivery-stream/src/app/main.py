@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 
 from src.app.core.config import settings
-from src.shared.logger import logger
+from src.shared.logger import get_logger
+
+logger = get_logger()
 
 
 @asynccontextmanager
@@ -14,6 +16,7 @@ async def lifespan(app: FastAPI):
         "Services Starting",
         extra={
             "project": settings.PROJECT_NAME,
+            "service": settings.SERVICE_NAME,
             "version": settings.VERSION,
             "env": settings.ENVIRONMENT,
         },
