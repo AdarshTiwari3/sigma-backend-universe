@@ -23,6 +23,6 @@ def get_logger() -> ILogger:
     )
 
 
-logger = get_logger()
+# logger = get_logger() # import this in main to avoid circular imports
 
 __all__ = ["logger", "LogLevel", "ILogger"]
