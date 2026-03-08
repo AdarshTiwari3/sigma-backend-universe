@@ -1,3 +1,4 @@
+.DS_Store
 # --- Python Architecture ---
 __pycache__/
 *.py[cod]
