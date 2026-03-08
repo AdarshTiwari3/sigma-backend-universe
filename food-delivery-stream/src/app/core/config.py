@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # --- Database Configuration ---
     DB_USER: str = "postgres"
-    DB_PASSWORD: SecretStr = "postgres"
+    DB_PASSWORD: SecretStr = SecretStr("postgres")
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_NAME: str = "food_delivery_db"

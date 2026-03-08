@@ -1,7 +1,9 @@
 import time
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 
 from src.app.core.config import settings
 from src.shared.logger import get_logger
@@ -10,7 +12,7 @@ logger = get_logger()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
     # --- Startup Logic ---
     logger.info(
         "Services Starting",
@@ -31,12 +33,12 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION, lifespan=li
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_requests(request: Request, call_next: Callable[[Request], Any]) -> Response:
 
     start_time = time.perf_counter()
 
     try:
-        response = await call_next(request)
+        response: Response = await call_next(request)
     except Exception:
         logger.error(
             "http_request_failed",
@@ -60,5 +62,8 @@ async def log_requests(request: Request, call_next):
 
 
 @app.get("/health")
-async def health_check():
-    return {"status": "ok", "service": settings.PROJECT_NAME}
+async def health_check() -> dict[str, str]:
+    return {
+        "status": "ok",
+        "service": settings.SERVICE_NAME,
+    }

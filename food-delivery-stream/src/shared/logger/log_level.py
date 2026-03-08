@@ -1,7 +1,12 @@
+"""Log Level implementation"""
+
 from enum import IntEnum
+from typing import Union
 
 
 class LogLevel(IntEnum):
+    """Enumeration representing supported log levels."""
+
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -11,11 +16,11 @@ class LogLevel(IntEnum):
     @classmethod
     def to_str(cls, level: int) -> str:
         """Converts integer level back to lowercase string for Structlog/JSON."""
-        mapping = {
+        mapping: dict[LogLevel, str] = {
             cls.DEBUG: "debug",
             cls.INFO: "info",
             cls.WARNING: "warning",
             cls.ERROR: "error",
             cls.FATAL: "fatal",
         }
-        return mapping.get(level, "info")
+        return mapping.get(LogLevel(level), "info")

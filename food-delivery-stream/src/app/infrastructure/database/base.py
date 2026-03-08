@@ -7,4 +7,4 @@ class Base(DeclarativeBase):
     Models in src/app/models/ will inherit from this.
     """
 
-    pass
+    # No `pass` needed. The docstring above satisfies the Python parser.

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.app.infrastructure.database.engine import engine
 
-AsyncSessionFactory = async_sessionmaker(
+ASYNC_SESSION_FACTORY = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     autocommit=False,
@@ -16,7 +16,7 @@ AsyncSessionFactory = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionFactory() as db:
+    async with ASYNC_SESSION_FACTORY() as db:
         try:
             yield db
         except Exception:

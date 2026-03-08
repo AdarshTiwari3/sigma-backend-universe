@@ -1,3 +1,5 @@
+"""Utilities for extracting OpenTelemetry trace and span IDs for log correlation."""
+
 from opentelemetry import trace
 
 
