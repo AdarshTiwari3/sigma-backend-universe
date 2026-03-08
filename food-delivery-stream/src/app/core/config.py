@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     DB_NAME: str = "food_delivery_db"
 
+    # --- Database Configuration for Production ---
+    DATABASE_URL: str | None = None
+
     # --- Pydantic Settings Config ---
     # This tells Pydantic to look for a .env file first
     model_config = SettingsConfigDict(
@@ -77,6 +80,9 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Constructs the SQLAlchemy connection string."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+
         password = self.DB_PASSWORD.get_secret_value()
         return f"postgresql+asyncpg://{self.DB_USER}:{password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
