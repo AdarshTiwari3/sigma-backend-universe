@@ -1,7 +1,6 @@
 """Log Level implementation"""
 
 from enum import IntEnum
-from typing import Union
 
 
 class LogLevel(IntEnum):
