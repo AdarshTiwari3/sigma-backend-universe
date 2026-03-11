@@ -35,7 +35,7 @@ async def lifespan(_fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
         init_kafka_producer()
         logger.info("kafka_producer_ready")
     except Exception as e:
-        logger.critical("kafka_initialization_failed", error=str(e))
+        logger.fatal("kafka_initialization_failed", error=str(e))
         raise e
 
     yield
