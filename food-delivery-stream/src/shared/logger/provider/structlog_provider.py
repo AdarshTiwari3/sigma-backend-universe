@@ -1,3 +1,10 @@
+"""
+Structlog-based logging provider.
+
+This module contains the concrete implementation of the ILogger interface
+using the structlog library for structured logging and trace context injection.
+"""
+
 from typing import Any
 
 import structlog
@@ -8,6 +15,13 @@ from src.shared.logger.log_level import LogLevel
 
 
 class StructlogProvider(ILogger):
+    """
+    Concrete implementation of ILogger using structlog.
+
+    Handles structured logging configuration, context propagation,
+    and trace injection for distributed systems.
+    """
+
     def __init__(self, is_dev: bool = False, log_level: LogLevel = LogLevel.INFO):
         """
         Initializes the Structlog engine.
@@ -17,7 +31,7 @@ class StructlogProvider(ILogger):
         self._is_dev = is_dev
 
         # 1. Pipeline: Order matters here!
-        processors = [
+        processors: list[Any] = [
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
@@ -44,7 +58,9 @@ class StructlogProvider(ILogger):
 
         self._logger = structlog.get_logger()
 
-    def _inject_tracing_context(self, _, __, event_dict: dict) -> dict:
+    def _inject_tracing_context(
+        self, _logger: Any, _name: str, event_dict: dict[str, Any]
+    ) -> dict[str, Any]:
         """Internal processor to stamp OTel IDs onto every log."""
         event_dict["trace_id"] = TraceContext.get_trace_id()
         event_dict["span_id"] = TraceContext.get_span_id()
@@ -57,19 +73,24 @@ class StructlogProvider(ILogger):
         method(message, **kwargs)
 
     # --- Shorthand methods for better Developer Experience (DX) ---
-    def debug(self, message: str, **kwargs):
+    def debug(self, message: str, **kwargs: Any) -> None:
+        """capture the debug"""
         self._logger.debug(message, **kwargs)
 
-    def info(self, message: str, **kwargs):
+    def info(self, message: str, **kwargs: Any) -> None:
+        """capture info"""
         self._logger.info(message, **kwargs)
 
-    def warning(self, message: str, **kwargs):
+    def warning(self, message: str, **kwargs: Any) -> None:
+        """capture warning"""
         self._logger.warning(message, **kwargs)
 
-    def error(self, message: str, **kwargs):
+    def error(self, message: str, **kwargs: Any) -> None:
+        """capture error"""
         self._logger.error(message, **kwargs)
 
-    def fatal(self, message: str, **kwargs):
+    def fatal(self, message: str, **kwargs: Any) -> None:
+        """capture fatal/ critical things"""
         # We map our custom FATAL level to structlog's critical method
         self._logger.critical(message, **kwargs)
 

@@ -32,13 +32,19 @@ class Settings(BaseSettings):
     # This feeds directly into our StructlogProvider
     LOG_LEVEL: LogLevel = LogLevel.INFO
 
+    # --- Kafka Configuration ---
+    # These match your Docker Compose setup for the Order Service
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_ORDER_TOPIC: str = "order-events"
+    KAFKA_CLIENT_ID: str = "order-service-producer"
+
     # --- OTel Configuration ---
     OTEL_SERVICE_NAME: str = "order-stream-service"
     OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None
 
     # --- Database Configuration ---
     DB_USER: str = "postgres"
-    DB_PASSWORD: SecretStr = "postgres"
+    DB_PASSWORD: SecretStr = SecretStr("postgres")
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_NAME: str = "food_delivery_db"

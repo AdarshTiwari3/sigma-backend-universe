@@ -1,3 +1,5 @@
+"""Application logging utilities and logger factory."""
+
 from functools import lru_cache
 
 from src.shared.logger.interface import ILogger
@@ -14,7 +16,7 @@ def get_logger() -> ILogger:
     is created only once (singleton behavior). Subsequent calls return
     the same cached instance, preventing multiple logger initializations.
     """
-
+    # pylint: disable=import-outside-toplevel
     from src.app.core.config import settings
 
     return StructlogProvider(
@@ -25,4 +27,4 @@ def get_logger() -> ILogger:
 
 # logger = get_logger() # import this in main to avoid circular imports
 
-__all__ = ["logger", "LogLevel", "ILogger"]
+__all__ = ["LogLevel", "ILogger"]

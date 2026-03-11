@@ -1,0 +1,20 @@
+[MASTER]
+ignore=migrations
+
+[MESSAGES CONTROL]
+disable=
+    # Stylistic/Documentation noise
+    missing-module-docstring,   # C0114
+    missing-class-docstring,    # C0115
+    missing-function-docstring, # C0116
+    
+    # Modern Framework False Positives
+    too-few-public-methods,     # R0903 (Models don't need many methods)
+    no-member,                  # E1101 (SQLAlchemy/Pydantic dynamic attributes)
+    not-callable,               # E1102 (SQLAlchemy func.now issues)
+    
+    # Miscellaneous
+    line-too-long               # C0301 (Sometimes URLs/Configs are long)
+
+[REPORTS]
+output-format=colorized
