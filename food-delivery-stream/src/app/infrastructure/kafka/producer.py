@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 from confluent_kafka import Producer
+from opentelemetry.propagate import inject
 
 from src.app.core.config import settings
 from src.shared.logger import get_logger
@@ -52,7 +53,17 @@ class KafkaProducerProvider:
     def publish(self, topic: str, key: str, value: dict[str, Any]) -> None:
         """
         Asynchronously push a message to a Kafka topic.
+
         """
+        # 1. Capture Trace Context from current execution
+        carrier: dict[str, str] = {}
+        inject(carrier)
+
+        # 2. Format headers as a list of tuples (Key, Bytes)
+        # This is the industry standard for confluent-kafka to ensure delivery
+        kafka_headers = [
+            (k, v.encode("utf-8") if isinstance(v, str) else v) for k, v in carrier.items()
+        ]
 
         try:
             # Convert Dictionary to JSON Bytes
@@ -60,7 +71,11 @@ class KafkaProducerProvider:
 
             # Push to the internal C-buffer
             self._producer.produce(
-                topic=topic, key=key, value=payload, callback=self._delivery_report
+                topic=topic,
+                key=key,
+                value=payload,
+                headers=kafka_headers,
+                callback=self._delivery_report,
             )
 
         except BufferError:
@@ -78,11 +93,12 @@ class KafkaProducerProvider:
                 topic=topic,
                 key=key,
                 value=payload,
+                headers=kafka_headers,
                 callback=self._delivery_report,
             )
 
         except Exception:
-            logger.exception(
+            logger.error(
                 "kafka_publish_exception",
                 topic=topic,
             )

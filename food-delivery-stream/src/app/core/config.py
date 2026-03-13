@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # --- OTel Configuration ---
     OTEL_SERVICE_NAME: str = "order-stream-service"
-    OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None
+    OTEL_EXPORTER_OTLP_ENDPOINT: str | None = "http://localhost:4317"
 
     # --- Database Configuration ---
     DB_USER: str = "postgres"
