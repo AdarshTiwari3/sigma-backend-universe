@@ -16,7 +16,7 @@ class PaymentConsumer:
 
     def __init__(self):
         self._conf = {
-            "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
+            "bootstrap.servers": settings.kafka.KAFKA_BOOTSTRAP_SERVERS,
             "group.id": "payment-service-group",  # Shared ID for scaling
             "auto.offset.reset": "earliest",  # Start from beginning if new group
             "enable.auto.commit": False,  # Manual commit for safety
@@ -63,5 +63,5 @@ class PaymentConsumer:
 
 # In a worker script, you would run it like this:
 # consumer = PaymentConsumer()
-# consumer.subscribe([settings.KAFKA_ORDER_TOPIC])
+# consumer.subscribe([settings.kafka.KAFKA_ORDER_TOPIC])
 # consumer.start_listening()

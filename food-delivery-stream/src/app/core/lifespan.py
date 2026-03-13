@@ -20,12 +20,12 @@ async def lifespan(_fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
     # --- Startup Logic ---
     logger.info(
         "services_starting",
-        project=settings.PROJECT_NAME,
-        service=settings.SERVICE_NAME,
-        version=settings.VERSION,
-        env=settings.ENVIRONMENT,
-        kafka_broker=settings.KAFKA_BOOTSTRAP_SERVERS,
-        db_host=settings.DB_HOST,
+        project=settings.app.PROJECT_NAME,
+        service=settings.app.SERVICE_NAME,
+        version=settings.app.VERSION,
+        env=settings.app.ENVIRONMENT,
+        kafka_broker=settings.kafka.KAFKA_BOOTSTRAP_SERVERS,
+        db_host=settings.db.DB_HOST,
     )
 
     # 1. Initialize Kafka Producer
