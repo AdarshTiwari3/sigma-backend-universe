@@ -23,24 +23,24 @@ def setup_tracing(fastapi_app: FastAPI) -> None:
     try:
         resource = Resource.create(
             attributes={
-                SERVICE_NAME: settings.SERVICE_NAME,
-                "env": settings.ENVIRONMENT,
+                SERVICE_NAME: settings.app.SERVICE_NAME,
+                "env": settings.app.ENVIRONMENT,
             }
         )
 
         provider = TracerProvider(resource=resource)
 
         # --- Conditional Exporter Logic ---
-        if settings.ENVIRONMENT == "development":
+        if settings.app.ENVIRONMENT == "development":
             # Local: Simple console output for debugging
             processor = BatchSpanProcessor(ConsoleSpanExporter())
             logger.info("otel_tracing_configured", exporter="console")
 
         else:
             # Prod/Staging: High-performance gRPC export to Jaeger/Tempo
-            # settings.OTLP_ENDPOINT should be something like "http://jaeger:4317"
+            # settings.otel.OTLP_ENDPOINT should be something like "http://jaeger:4317"
             otlp_exporter = OTLPSpanExporter(
-                endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True
+                endpoint=settings.otel.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True
             )
             processor = BatchSpanProcessor(otlp_exporter)
             logger.info(
@@ -57,7 +57,7 @@ def setup_tracing(fastapi_app: FastAPI) -> None:
         # It will automatically detect your engine and trace all queries
         SQLAlchemyInstrumentor().instrument(
             engine=engine.sync_engine,  # For async engines, we instrument the underlying sync_engine
-            service_name=settings.SERVICE_NAME,
+            service_name=settings.app.SERVICE_NAME,
         )
 
         # Automatically trace FastAPI requests/responses

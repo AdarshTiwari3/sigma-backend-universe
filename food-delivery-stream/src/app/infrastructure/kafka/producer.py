@@ -19,8 +19,8 @@ class KafkaProducerProvider:
     def __init__(self) -> None:
 
         self._conf = {
-            "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
-            "client.id": settings.KAFKA_CLIENT_ID,
+            "bootstrap.servers": settings.kafka.KAFKA_BOOTSTRAP_SERVERS,
+            "client.id": settings.kafka.KAFKA_CLIENT_ID,
             "acks": "all",  # Ensure all replicas acknowledge (No data loss)
             "enable.idempotence": True,  # Prevent duplicate messages
             "compression.type": "snappy",  # High-performance compression
@@ -29,7 +29,9 @@ class KafkaProducerProvider:
 
         try:
             self._producer = Producer(self._conf)
-            logger.info("kafka_producer_initialized", servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+            logger.info(
+                "kafka_producer_initialized", servers=settings.kafka.KAFKA_BOOTSTRAP_SERVERS
+            )
 
         except Exception as e:
             logger.error("kafka_producer_init_failed", error=str(e))

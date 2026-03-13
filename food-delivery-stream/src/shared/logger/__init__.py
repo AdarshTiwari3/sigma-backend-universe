@@ -20,7 +20,7 @@ def get_logger() -> ILogger:
     from src.app.core.config import settings
 
     return StructlogProvider(
-        is_dev=settings.is_dev,
+        is_dev=settings.app.is_dev,
         log_level=settings.LOG_LEVEL,
     )
 
