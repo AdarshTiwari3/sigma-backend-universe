@@ -26,5 +26,9 @@ class ILogger(ABC):
         pass
 
     @abstractmethod
+    def fatal(self, message: str, **kwargs: Any) -> None:
+        pass
+
+    @abstractmethod
     def bind(self, **kwargs: Any) -> None:
         pass
