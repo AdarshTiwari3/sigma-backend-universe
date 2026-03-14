@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings
+from src.app.core.settings.base import BaseAppConfig
 
 
-class CORSSettings(BaseSettings):
+class CORSSettings(BaseAppConfig):
     """
     Configuration for Cross-Origin Resource Sharing (CORS).
     Attributes will be mapped from .env using 'CORS_' prefix.
