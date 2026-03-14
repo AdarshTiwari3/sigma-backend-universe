@@ -1,5 +1,7 @@
 """Utilities for extracting OpenTelemetry trace and span IDs for log correlation."""
 
+import uuid
+
 from opentelemetry import trace
 
 
@@ -19,7 +21,8 @@ class TraceContext:
             # 032x ensures 32-char hex padding for Trace ID
             return format(context.trace_id, "032x")
 
-        return "n/a"
+        # This ensures every log in EFK is searchable even if OTel fails.
+        return f"gen-{uuid.uuid4().hex}"
 
     @staticmethod
     def get_span_id() -> str:

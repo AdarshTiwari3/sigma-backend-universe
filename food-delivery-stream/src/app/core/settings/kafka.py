@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings
+from src.app.core.settings.base import BaseAppConfig
 
 
-class KafkaSettings(BaseSettings):
+class KafkaSettings(BaseAppConfig):
     """Configuration for Kafka Producers and Consumers."""
 
     KAFKA_BOOTSTRAP_SERVERS: str = "127.0.0.1:9092"

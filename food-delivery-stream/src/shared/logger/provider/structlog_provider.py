@@ -35,7 +35,7 @@ class StructlogProvider(ILogger):
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
-            self._inject_tracing_context,  # Our custom OTel injector
+            self._inject_tracing_context,  # custom OTel injector
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
         ]
@@ -62,8 +62,14 @@ class StructlogProvider(ILogger):
         self, _logger: Any, _name: str, event_dict: dict[str, Any]
     ) -> dict[str, Any]:
         """Internal processor to stamp OTel IDs onto every log."""
-        event_dict["trace_id"] = TraceContext.get_trace_id()
-        event_dict["span_id"] = TraceContext.get_span_id()
+
+        t_id = TraceContext.get_trace_id()
+        s_id = TraceContext.get_span_id()
+
+        # Standard OTel fields
+        event_dict["trace_id"] = t_id
+        event_dict["span_id"] = s_id
+
         return event_dict
 
     def log(self, level: LogLevel, message: str, **kwargs: Any) -> None:

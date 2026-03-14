@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings
+from src.app.core.settings.base import BaseAppConfig
 
 
-class OTelSettings(BaseSettings):
+class OTelSettings(BaseAppConfig):
     """Configuration for OpenTelemetry and Distributed Tracing."""
 
     OTEL_SERVICE_NAME: str = "order-stream-service"

@@ -31,7 +31,7 @@ def setup_tracing(fastapi_app: FastAPI) -> None:
         provider = TracerProvider(resource=resource)
 
         # --- Conditional Exporter Logic ---
-        if settings.app.ENVIRONMENT == "development":
+        if settings.app.is_dev:
             # Local: Simple console output for debugging
             processor = BatchSpanProcessor(ConsoleSpanExporter())
             logger.info("otel_tracing_configured", exporter="console")

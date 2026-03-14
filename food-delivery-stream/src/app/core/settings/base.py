@@ -1,39 +1,13 @@
-from enum import StrEnum
-
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Environment(StrEnum):
-    DEVELOPMENT = "development"
-    PRODUCTION = "production"
-    TESTING = "testing"
+class BaseAppConfig(BaseSettings):
+    """Base App Configuration"""
 
-
-class BaseAppSettings(BaseSettings):
-    """Project Metadata"""
-
-    PROJECT_NAME: str = "FoodDeliveryStream"
-    VERSION: str = "1.0.0"
-    ENVIRONMENT: Environment = Environment.DEVELOPMENT
-    SERVICE_NAME: str = "order-stream-service"
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
-
-    @property
-    def is_dev(self) -> bool:
-        """Helper to check if we are in development mode."""
-        return self.ENVIRONMENT == Environment.DEVELOPMENT
-
-    @property
-    def is_prod(self) -> bool:
-        """Check if running in production."""
-        return self.ENVIRONMENT == Environment.PRODUCTION
-
-    @property
-    def is_test(self) -> bool:
-        """Check if running in test environment."""
-        return self.ENVIRONMENT == Environment.TESTING
-
-    @property
-    def debug(self) -> bool:
-        """Enable debug mode automatically in development."""
-        return self.is_dev
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+        validate_assignment=True,
+    )
