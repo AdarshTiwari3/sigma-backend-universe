@@ -4,65 +4,64 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.app.core.config import settings
-from src.app.infrastructure.database.session import engine
-from src.app.infrastructure.kafka.producer import get_kafka_producer, init_kafka_producer
+from src.app.core.lifecycle.database_lifecycle import (
+    shutdown_database,
+    startup_database,
+)
+from src.app.core.lifecycle.kafka_lifecycle import shutdown_kafka, startup_kafka
+from src.app.core.lifecycle.redis_lifecycle import shutdown_redis, startup_redis
 from src.shared.logger import get_logger
 
 logger = get_logger()
 
 
 @asynccontextmanager
-async def lifespan(_fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Manages the application lifecycle.
     Ensures infrastructure (Kafka, DB) starts and stops gracefully.
     """
-    # --- Startup Logic ---
-    logger.info(
-        "services_starting",
-        project=settings.app.PROJECT_NAME,
-        service=settings.app.SERVICE_NAME,
-        version=settings.app.VERSION,
-        env=settings.app.ENVIRONMENT,
-        kafka_broker=settings.kafka.KAFKA_BOOTSTRAP_SERVERS,
-        db_host=settings.db.DB_HOST,
-    )
 
-    # 1. Initialize Kafka Producer
+    redis_started = False
+    db_started = False
+    kafka_started = False
+
     try:
-        init_kafka_producer()
-        logger.info("kafka_producer_ready")
+
+        logger.info(
+            "services_starting",
+            project=settings.app.PROJECT_NAME,
+            version=settings.app.VERSION,
+            env=settings.app.ENVIRONMENT,
+        )
+
+        await startup_redis()
+        redis_started = True
+
+        await startup_database()
+        db_started = True
+
+        startup_kafka()
+        kafka_started = True
+
+        logger.info("application_startup_complete")
+
+        yield
+
     except Exception as e:
-        logger.error("kafka_initialization_failed", error=str(e))
-        raise e
+        logger.fatal("application_startup_failed", error=str(e))
+        raise
 
-    yield
+    finally:
+        logger.info("services_shutting_down_initiated")
 
-    # --- Shutdown Logic ---
-    logger.info("services_shutting_down_initiated")
+        if kafka_started:
+            shutdown_kafka()
 
-    # 1. Flush Kafka buffer
-    try:
-        # FIX: Access the instance via the getter function
-        producer = get_kafka_producer()
-        logger.info("flushing_kafka_producer_buffer")
+        if db_started:
+            await shutdown_database()
 
-        unfilled_messages = producer.flush(timeout=10.0)
+        if redis_started:
+            await shutdown_redis()
 
-        if unfilled_messages > 0:
-            logger.warning("kafka_flush_incomplete", missing_count=unfilled_messages)
-        else:
-            logger.info("kafka_flush_successful")
-    except Exception as e:
-        logger.error("kafka_shutdown_error", error=str(e))
-
-    # 2. Close Database connection pools
-    try:
-        logger.info("closing_database_connection_pool")
-        # dispose() is the correct way to close all underlying connections in the pool
-        await engine.dispose()
-        logger.info("database_connections_closed")
-    except Exception as e:
-        logger.error("database_shutdown_error", error=str(e))
-
-    logger.info("cleanup_complete_safe_to_exit")
+        logger.info("cleanup_complete_safe_to_exit")
