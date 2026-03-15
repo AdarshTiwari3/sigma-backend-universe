@@ -1,6 +1,6 @@
 from typing import Any, Generic, TypeVar
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, inspect, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,8 +26,11 @@ class BaseRepository(Generic[T]):
     """
 
     def __init__(self, model: type[T], session: AsyncSession):
-        self.model = model  # table name
+        self.model = model  # SQLAlchemy ORM model mapped to a table
         self.session = session
+
+        self._primary_key = inspect(self.model).primary_key[0].name
+        self._pk_column = getattr(self.model, self._primary_key)
 
     # --- CREATE ---
 
@@ -50,7 +53,7 @@ class BaseRepository(Generic[T]):
             logger.error(
                 "repository_create_failed",
                 model=self.model.__name__,
-                payload=data,
+                payload=list(data.keys()),
                 error=str(e),
             )
             raise
@@ -63,7 +66,7 @@ class BaseRepository(Generic[T]):
         """
 
         stmt = (
-            update(self.model).where(self.model.id == obj_id).values(**data).returning(self.model)
+            update(self.model).where(self._pk_column == obj_id).values(**data).returning(self.model)
         )
 
         try:
@@ -73,6 +76,7 @@ class BaseRepository(Generic[T]):
         except SQLAlchemyError as e:
             logger.error(
                 "repository_update_failed",
+                repository=self.__class__.__name__,
                 model=self.model.__name__,
                 id=obj_id,
                 payload=data,
@@ -89,7 +93,7 @@ class BaseRepository(Generic[T]):
         Uses RETURNING for reliability across DB drivers.
         """
 
-        stmt = delete(self.model).where(self.model.id == obj_id).returning(self.model.id)
+        stmt = delete(self.model).where(self._pk_column == obj_id).returning(self._pk_column)
 
         try:
             result = await self.session.execute(stmt)
