@@ -1,8 +1,14 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import JSON, CheckConstraint, DateTime, Enum, Numeric, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from src.app.models.orders.order_adjustment import OrderAdjustment
+    from src.app.models.orders.order_item import OrderItem
+    from src.app.models.orders.order_status_history import OrderStatusHistory
 
 from src.app.infrastructure.database.base import Base
 from src.app.models.orders.order_status import OrderStatus
@@ -44,6 +50,39 @@ class Order(Base):
     # Numeric(10, 2) ensures we handle money correctly (max 99,999,999.99)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
+    # THE LOGISTICS BRIDGE
+    # Even if another service handles delivery, the Order needs to know
+    # where it's going at the time of purchase (Snapshot).
+    delivery_address: Mapped[dict] = mapped_column(
+        JSON, nullable=False, comment="Snapshot of the address at order time"
+    )
+
+    # THE RESTAURANT IDENTIFIER
+    # You cannot have an order without a vendor.
+    restaurant_id: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
+
+    # THE EXTERNAL LINK
+    # Nullable because we don't have a delivery_id until the Delivery Service assigns one.
+    delivery_id: Mapped[str | None] = mapped_column(
+        String(50),
+        index=True,
+        nullable=True,
+        comment="Foreign reference to the Delivery Microservice",
+    )
+
+    # RELATIONSHIP TO THE SECOND TABLE
+    items: Mapped[list["OrderItem"]] = relationship(
+        "OrderItem", back_populates="order", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+    adjustments: Mapped[list["OrderAdjustment"]] = relationship(
+        "OrderAdjustment", back_populates="order", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+    status_history: Mapped[list["OrderStatusHistory"]] = relationship(
+        "OrderStatusHistory", back_populates="order", cascade="all, delete-orphan", lazy="selectin"
+    )
+
     # --- State Management ---
     status: Mapped[OrderStatus] = mapped_column(
         Enum(OrderStatus),
@@ -51,6 +90,12 @@ class Order(Base):
         server_default=OrderStatus.PENDING.value,
         nullable=False,
         index=True,
+    )
+
+    version: Mapped[int] = mapped_column(
+        default=1,
+        nullable=False,
+        comment="Optimistic locking version counter",
     )
 
     # --- Audit Timestamps ---
@@ -69,6 +114,8 @@ class Order(Base):
         # Prevents negative prices at the hardware/DB level
         CheckConstraint("total_amount > 0", name="check_total_amount_positive"),
     )
+
+    __mapper_args__ = {"version_id_col": version}
 
     def __repr__(self) -> str:
         """Developer-friendly string representation."""
