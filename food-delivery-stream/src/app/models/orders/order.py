@@ -92,6 +92,12 @@ class Order(Base):
         index=True,
     )
 
+    version: Mapped[int] = mapped_column(
+        default=1,
+        nullable=False,
+        comment="Optimistic locking version counter",
+    )
+
     # --- Audit Timestamps ---
     # Stored in UTC with Timezone awareness
     created_at: Mapped[datetime] = mapped_column(
@@ -108,6 +114,8 @@ class Order(Base):
         # Prevents negative prices at the hardware/DB level
         CheckConstraint("total_amount > 0", name="check_total_amount_positive"),
     )
+
+    __mapper_args__ = {"version_id_col": version}
 
     def __repr__(self) -> str:
         """Developer-friendly string representation."""
