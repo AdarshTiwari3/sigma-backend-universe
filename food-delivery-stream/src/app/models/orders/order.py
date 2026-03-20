@@ -46,6 +46,16 @@ class Order(Base):
     customer_id: Mapped[str] = mapped_column(
         String(50), index=True, nullable=False, comment="Identifier for the customer"
     )
+
+    # NEW COLUMN FOR IDEMPOTENCY
+    idempotency_key: Mapped[str | None] = mapped_column(
+        String(100),
+        unique=True,
+        index=True,
+        nullable=True,
+        comment="Unique request key to prevent duplicate processing",
+    )
+
     # --- Financial Data ---
     # Numeric(10, 2) ensures we handle money correctly (max 99,999,999.99)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)

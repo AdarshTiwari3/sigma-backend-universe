@@ -1,13 +1,14 @@
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.repositories.base import BaseRepository
 from src.app.models.orders.order import Order
-from src.app.models.orders.order_item import OrderItem
-from src.app.models.orders.order_status_history import OrderStatusHistory
 from src.app.models.orders.order_adjustment import OrderAdjustment
+from src.app.models.orders.order_item import OrderItem
 from src.app.models.orders.order_status import OrderStatus
+from src.app.models.orders.order_status_history import OrderStatusHistory
+from src.app.repositories.base import BaseRepository
 
 
 class OrderCreationRepository(BaseRepository[Order]):
@@ -18,6 +19,19 @@ class OrderCreationRepository(BaseRepository[Order]):
 
     def __init__(self, session: AsyncSession):
         super().__init__(Order, session)
+
+    async def get_by_idempotency_key(self, idempotency_key: str) -> Order | None:
+        """
+        Check for an existing order using the unique request key.
+        This is a 'Guard Read' to prevent duplicate command execution.
+        """
+
+        query = select(Order).where(Order.idempotency_key == idempotency_key)
+
+        result = await self.session.execute(query)
+
+        # It returns the object if found, None if not
+        return result.scalar_one_or_none()
 
     async def create_order(self, order_data: dict) -> Order:
         """
