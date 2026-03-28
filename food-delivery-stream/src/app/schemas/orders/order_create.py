@@ -65,8 +65,8 @@ class OrderRequestDTO(BaseModel):  # Order input from user's side
     restaurant_id: UUID
     idempotency_key: str = Field(..., min_length=12)
     delivery_address: AddressDTO
-    items: list[OrderItemDTO]
-    total_amount: Decimal = Field(..., ge=0)
+    items: Annotated[list[OrderItemDTO], Field(min_length=1)]
+    total_amount: Decimal = Field(..., gt=0)
 
     @model_validator(mode="after")
     def validate_total_consistency(self) -> "OrderRequestDTO":
