@@ -5,6 +5,20 @@ from uuid import UUID
 from pydantic import BaseModel, Field, computed_field, model_validator
 
 
+class AddressDTO(BaseModel):
+    """
+    Structured address snapshot.
+    Stored as JSON in the 'delivery_address' column.
+    """
+
+    street: str = Field(..., min_length=1, max_length=255)
+    city: str = Field(..., min_length=1, max_length=100)
+    state: str = Field(..., min_length=2, max_length=50)
+    zip_code: str = Field(..., min_length=5, max_length=10)
+    apartment_number: str | None = Field(None, max_length=20)
+    delivery_instructions: str | None = Field(None, max_length=500)
+
+
 class OrderItemDTO(BaseModel):
     """
     Hardened DTO for order items.
@@ -18,7 +32,7 @@ class OrderItemDTO(BaseModel):
     discount_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
     instructions: str | None = Field(None, max_length=500)
 
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    item_metadata: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_discount_logic(self) -> "OrderItemDTO":
@@ -41,7 +55,7 @@ class OrderItemDTO(BaseModel):
         return (self.unit_price * self.quantity) - self.discount_amount
 
 
-class PlaceOrderCommand(BaseModel):
+class OrderRequestDTO(BaseModel):  # Order input from user's side
     """
     The 'Write' contract.
     Includes global validation to ensure all items sum correctly.
@@ -50,11 +64,12 @@ class PlaceOrderCommand(BaseModel):
     customer_id: UUID
     restaurant_id: UUID
     idempotency_key: str = Field(..., min_length=12)
-    items: list[OrderItemDTO]
-    total_amount: Decimal = Field(..., ge=0)
+    delivery_address: AddressDTO
+    items: Annotated[list[OrderItemDTO], Field(min_length=1)]
+    total_amount: Decimal = Field(..., gt=0)
 
     @model_validator(mode="after")
-    def validate_total_consistency(self) -> "PlaceOrderCommand":
+    def validate_total_consistency(self) -> "OrderRequestDTO":
         """Recalculates from computed subtotals to ensure financial integrity."""
         calculated_total = sum(item.subtotal for item in self.items)
         if abs(self.total_amount - calculated_total) > Decimal("0.01"):

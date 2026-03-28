@@ -1,5 +1,5 @@
-import copy
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -13,6 +13,7 @@ from src.app.infrastructure.redis.redis import RedisManager
 from src.app.models.orders.order import Order
 from src.app.models.orders.order_status import OrderStatus
 from src.app.repositories.orders.order_creation_repository import OrderCreationRepository
+from src.app.schemas.orders.order_create import OrderRequestDTO
 from src.shared.logger import get_logger
 
 logger = get_logger()
@@ -29,27 +30,28 @@ class OrderService:
         self.redis = redis_manager.client
         self.kafka = kafka_producer
 
-    async def place_order(self, order_request: dict[str, Any]) -> Order:
+    async def place_order(self, order_request: OrderRequestDTO) -> Order:
         """
-        Main Orchestrator.
-        Logic is split into 5 distinct phases for PBC-grade readability.
+        Main CQRS Command Handler.
+        Orchestrates Order Creation with distributed locking and atomic persistence.
         """
         # 1. Setup Context (Define variables early to avoid scope errors)
-        idempotency_key = order_request.get("idempotency_key")
+        idempotency_key = order_request.idempotency_key
         redis_key = f"idempotency:{idempotency_key}" if idempotency_key else None
 
-        # 2. Validation Phase
-        base_data, items, customer_id = self._validate_request(order_request)
-
         try:
-            # 3. Infrastructure Guard (Redis Shield)
+            # 2. Infrastructure Guard (Redis Shield)
             await self._acquire_idempotency_lock(redis_key)
 
-            # 4. Atomic Persistence (Pure DB Transaction)
-            new_order = await self._persist_order_to_db(order_request, base_data, idempotency_key)
+            # 3. Atomic Persistence (Pure DB Transaction)
+            new_order = await self._persist_order_to_db(order_request)
 
-            # 5. Post-Commit Side Effects (Kafka & Cache Sync)
-            await self._dispatch_post_commit_events(new_order, redis_key, customer_id)
+            # 4. Post-Commit Side Effects (Kafka & Cache Sync)
+            await self._dispatch_post_commit_events(
+                new_order,
+                redis_key,
+                order_request,
+            )
 
             return new_order
 
@@ -61,18 +63,7 @@ class OrderService:
             await self._janitor_cleanup(e, redis_key, idempotency_key)
             raise
 
-    # --- PHASE 1: VALIDATION ---
-    def _validate_request(self, request: dict) -> tuple[dict, list, Any]:
-        """Ensures the incoming request has the required shape."""
-        try:
-            base_data = copy.copy(request["base_data"])
-            return base_data, request["items"], base_data["customer_id"]
-        except KeyError as e:
-            raise OrderValidationException(
-                message=f"Missing field: {str(e)}", error_code="INVALID_REQUEST_SHAPE"
-            ) from e
-
-    # --- PHASE 2: INFRASTRUCTURE GUARDS ---
+    # --- PHASE 1: INFRASTRUCTURE GUARDS ---
     async def _acquire_idempotency_lock(self, redis_key: str | None) -> None:
         """Guards against concurrent duplicate requests."""
         if not redis_key:
@@ -88,28 +79,43 @@ class OrderService:
                 payload={"order_id": cached if cached != "PROCESSING" else "PENDING"},
             )
 
-    # --- PHASE 3: ATOMIC PERSISTENCE ---
-    async def _persist_order_to_db(self, req: dict, base: dict, key: str | None) -> Order:
-        """Handles pure Database work inside an atomic block."""
-        if key:
-            base["idempotency_key"] = key
+    # --- PHASE 2: ATOMIC PERSISTENCE ---
+    async def _persist_order_to_db(self, order_request: OrderRequestDTO) -> Order:
+        """
+        Converts DTO into DB Model and persists items atomically.
+        """
+        # Prepare base data dict for the Repo
+        base_data = {
+            "order_number": self._generate_order_number(),
+            "customer_id": str(order_request.customer_id),
+            "restaurant_id": str(order_request.restaurant_id),
+            "total_amount": order_request.total_amount,
+            "idempotency_key": order_request.idempotency_key,
+            "delivery_address": order_request.delivery_address.model_dump(),
+            "status": OrderStatus.PENDING,
+        }
 
         async with self.order_creation_repo.session.begin():
-            order = await self.order_creation_repo.create_order(order_data=base)
-            await self.order_creation_repo.add_items(order.id, req["items"])
+            # Create Order Header
+            order = await self.order_creation_repo.create_order(order_data=base_data)
 
-            if "adjustments" in req:
-                await self.order_creation_repo.add_order_adjustments(order.id, req["adjustments"])
+            # Map Items (pydantic model_dump handles the @computed_field subtotal)
+            items_payload = [item.model_dump() for item in order_request.items]
+            await self.order_creation_repo.add_items(order.id, items_payload)
 
+            # Audit Trail entry
             await self.order_creation_repo.record_status_transition(order.id, OrderStatus.PENDING)
+
             return order
 
-    # --- PHASE 4: SIDE EFFECTS ---
+    def _generate_order_number(self) -> str:
+        return f"ORD-{uuid4().hex[:12].upper()}"
+
+    # --- PHASE 3: SIDE EFFECTS ---
     async def _dispatch_post_commit_events(
-        self, order: Order, redis_key: str | None, customer_id: Any
+        self, order: Order, redis_key: str | None, order_request: OrderRequestDTO
     ) -> None:
-        """Handles reliable notifications and cache updates after DB success."""
-        # 1. Kafka: Wait for delivery confirmation
+        """Publishes to Kafka and updates final Redis state after DB success."""
         try:
             self.kafka.publish(
                 topic="order-created",
@@ -117,8 +123,9 @@ class OrderService:
                 value={
                     "order_id": order.id,
                     "order_number": order.order_number,
-                    "customer_id": customer_id,
+                    "customer_id": str(order_request.customer_id),
                     "status": OrderStatus.PENDING.value,
+                    "delivery_address": order_request.delivery_address.model_dump(),
                 },
             )
             self.kafka.flush(timeout=1.0)
