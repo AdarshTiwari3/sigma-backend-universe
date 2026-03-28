@@ -53,6 +53,8 @@ food-delivery-stream/
 
     # Run the app in debug mode
     uv run uvicorn src.app.main:app --reload
+    # or
+    uv run uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
 
     ```
 - 2.2 Directory setup:
@@ -77,7 +79,7 @@ In a PBC, we never use ```Base.metadata.create_all()```. We version control the 
 
 3. Generate: ```uv run alembic revision --autogenerate -m "Initial Schema"```
 
-4. Deploy: ```uv run alembic upgrade head```
+4. Deploy: ```uv run alembic upgrade head``` - this will create the table if not present
 
 ## 4. Code Quality Guardrails
 Configure these in pyproject.toml to maintain a high "Industry Standard" score.
