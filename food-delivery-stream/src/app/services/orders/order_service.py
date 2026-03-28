@@ -95,10 +95,6 @@ class OrderService:
             "status": OrderStatus.PENDING,
         }
 
-        items_payload = [
-            item.model_dump() for item in order_request.items
-        ]  # serialize in json from pydantic
-
         async with self.order_creation_repo.session.begin():
             # Create Order Header
             order = await self.order_creation_repo.create_order(order_data=base_data)
@@ -117,7 +113,7 @@ class OrderService:
 
     # --- PHASE 3: SIDE EFFECTS ---
     async def _dispatch_post_commit_events(
-        self, order: Order, redis_key: str, order_request: OrderRequestDTO
+        self, order: Order, redis_key: str | None, order_request: OrderRequestDTO
     ) -> None:
         """Publishes to Kafka and updates final Redis state after DB success."""
         try:
