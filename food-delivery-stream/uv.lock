@@ -580,7 +580,9 @@ dependencies = [
     { name = "greenlet" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-instrumentation-confluent-kafka" },
     { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-redis" },
     { name = "opentelemetry-instrumentation-sqlalchemy" },
     { name = "opentelemetry-sdk" },
     { name = "pydantic-settings" },
@@ -612,7 +614,9 @@ requires-dist = [
     { name = "greenlet", specifier = ">=3.3.2" },
     { name = "opentelemetry-api", specifier = ">=1.40.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.40.0" },
+    { name = "opentelemetry-instrumentation-confluent-kafka", specifier = ">=0.61b0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.61b0" },
+    { name = "opentelemetry-instrumentation-redis", specifier = ">=0.61b0" },
     { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.61b0" },
     { name = "opentelemetry-sdk", specifier = ">=1.40.0" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
@@ -1214,6 +1218,20 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-instrumentation-confluent-kafka"
+version = "0.61b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/39/0e/76db8f0f41678da1c50926367eaf7c3a984cb849235e83b699ad801341b0/opentelemetry_instrumentation_confluent_kafka-0.61b0.tar.gz", hash = "sha256:06c7a13b0ccfa77701d90df19e755e92f3ae3ca6f88c0b1cca64700b4ea1af78", size = 11900, upload-time = "2026-03-04T14:20:29.172Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/a2/0a79dcd319a7a8de6aaf91ba1ca1d995a51e63ca0fbf545ae0eeec993a81/opentelemetry_instrumentation_confluent_kafka-0.61b0-py3-none-any.whl", hash = "sha256:2ce36aa3287b870c30b62584090360d591d882f179da07d729f009d442799f16", size = 12810, upload-time = "2026-03-04T14:19:23.468Z" },
+]
+
+[[package]]
 name = "opentelemetry-instrumentation-fastapi"
 version = "0.61b0"
 source = { registry = "https://pypi.org/simple" }
@@ -1227,6 +1245,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/37/35/aa727bb6e6ef930dcdc96a617b83748fece57b43c47d83ba8d83fbeca657/opentelemetry_instrumentation_fastapi-0.61b0.tar.gz", hash = "sha256:3a24f35b07c557ae1bbc483bf8412221f25d79a405f8b047de8b670722e2fa9f", size = 24800, upload-time = "2026-03-04T14:20:32.759Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/91/05/acfeb2cccd434242a0a7d0ea29afaf077e04b42b35b485d89aee4e0d9340/opentelemetry_instrumentation_fastapi-0.61b0-py3-none-any.whl", hash = "sha256:a1a844d846540d687d377516b2ff698b51d87c781b59f47c214359c4a241047c", size = 13485, upload-time = "2026-03-04T14:19:30.351Z" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-redis"
+version = "0.61b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cf/21/26205f89358a5f2be3ee5512d3d3bce16b622977f64aeaa9d3fa8887dd39/opentelemetry_instrumentation_redis-0.61b0.tar.gz", hash = "sha256:ae0fbb56be9a641e621d55b02a7d62977a2c77c5ee760addd79b9b266e46e523", size = 14781, upload-time = "2026-03-04T14:20:45.694Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/e1/8f4c8e4194291dbe828aeabe779050a8497b379ad90040a5a0a7074b1d08/opentelemetry_instrumentation_redis-0.61b0-py3-none-any.whl", hash = "sha256:8d4e850bbb5f8eeafa44c0eac3a007990c7125de187bc9c3659e29ff7e091172", size = 15506, upload-time = "2026-03-04T14:19:48.588Z" },
 ]
 
 [[package]]
