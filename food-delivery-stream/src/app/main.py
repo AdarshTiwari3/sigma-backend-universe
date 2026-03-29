@@ -6,6 +6,7 @@ from src.app.api.v1.router import api_v1_router
 from src.app.core.config import settings
 from src.app.core.lifespan import lifespan
 from src.app.core.tracing import setup_tracing
+from src.app.exceptions.handler import register_exception_handler
 
 
 def create_app() -> FastAPI:
@@ -20,6 +21,9 @@ def create_app() -> FastAPI:
 
     # 1. Setup Observability/Tracing
     setup_tracing(app)
+
+    # Register centralized exception handlers for consistent API error responses
+    register_exception_handler(app=app)
 
     # Register CORS middleware
     app.add_middleware(
