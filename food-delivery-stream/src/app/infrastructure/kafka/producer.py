@@ -3,11 +3,15 @@ from typing import Any
 
 from confluent_kafka import Producer
 from opentelemetry.propagate import inject
+from opentelemetry.trace import Status, StatusCode, get_tracer
 
 from src.app.core.config import settings
 from src.shared.logger import get_logger
 
 logger = get_logger()
+
+# Get a tracer instance for this file
+tracer = get_tracer(__name__)
 
 
 class KafkaProducerProvider:
@@ -57,57 +61,74 @@ class KafkaProducerProvider:
         Asynchronously push a message to a Kafka topic.
 
         """
-        # 1. Capture Trace Context from current execution
-        carrier: dict[str, str] = {}
-        inject(carrier)
 
-        # 2. Format headers as a list of tuples (Key, Bytes)
-        # This is the industry standard for confluent-kafka to ensure delivery
-        kafka_headers = [
-            (k, v.encode("utf-8") if isinstance(v, str) else v) for k, v in carrier.items()
-        ]
+        with tracer.start_as_current_span(
+            "kafka.produce",
+            attributes={
+                "messaging.destination": topic,
+                "messaging.kafka.message_key": key,
+                "messaging.system": "kafka",
+            },
+        ) as span:
 
-        try:
-            # Convert Dictionary to JSON Bytes
-            payload = json.dumps(value).encode("utf-8")
+            # 1. Capture Trace Context from current execution
+            carrier: dict[str, str] = {}
+            inject(carrier)
 
-            # Push to the internal C-buffer
-            self._producer.produce(
-                topic=topic,
-                key=key,
-                value=payload,
-                headers=kafka_headers,
-                callback=self._delivery_report,
-            )
+            # 2. Format headers as a list of tuples (Key, Bytes)
+            # This is the industry standard for confluent-kafka to ensure delivery
+            kafka_headers = [
+                (k, v.encode("utf-8") if isinstance(v, str) else v) for k, v in carrier.items()
+            ]
 
-        except BufferError:
-            # Producer queue is full
-            logger.warning(
-                "kafka_buffer_full_retrying",
-                topic=topic,
-            )
+            try:
+                # Convert Dictionary to JSON Bytes
+                payload = json.dumps(value).encode("utf-8")
 
-            # Poll to process delivery callbacks and free buffer
-            self._producer.poll(1)
+                # Push to the internal C-buffer
+                self._producer.produce(
+                    topic=topic,
+                    key=key,
+                    value=payload,
+                    headers=kafka_headers,
+                    callback=self._delivery_report,
+                )
 
-            # Retry produce
-            self._producer.produce(
-                topic=topic,
-                key=key,
-                value=payload,
-                headers=kafka_headers,
-                callback=self._delivery_report,
-            )
+                span.add_event("queued_to_kafka_buffer")
 
-        except Exception:
-            logger.error(
-                "kafka_publish_exception",
-                topic=topic,
-            )
+            except BufferError:
+                span.add_event("producer_buffer_full_retrying")
+                # Producer queue is full
+                logger.warning(
+                    "kafka_buffer_full_retrying",
+                    topic=topic,
+                )
 
-        finally:
-            # Serve delivery report callbacks
-            self._producer.poll(0)
+                # Poll to process delivery callbacks and free buffer
+                self._producer.poll(1)
+
+                # Retry produce
+                self._producer.produce(
+                    topic=topic,
+                    key=key,
+                    value=payload,
+                    headers=kafka_headers,
+                    callback=self._delivery_report,
+                )
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR))
+                logger.error(
+                    "kafka_publish_exception",
+                    topic=topic,
+                    error=str(e),
+                )
+                raise
+
+            finally:
+                # Serve delivery report callbacks
+                self._producer.poll(0)
 
     def flush(self, timeout: float = 10.0) -> int:
         """
