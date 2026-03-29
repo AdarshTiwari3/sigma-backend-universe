@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from opentelemetry import propagate, trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.confluent_kafka import ConfluentKafkaInstrumentor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -52,6 +54,15 @@ def setup_tracing(fastapi_app: FastAPI) -> None:
 
         # This ensures inject(headers) actually works for Kafka/External calls
         propagate.set_global_textmap(TraceContextTextMapPropagator())
+
+        # Instrument Redis
+        # This will catch all calls made via your RedisManager's client
+
+        RedisInstrumentor().instrument()
+
+        # Instrument Kafka
+        # This tracks the 'produce' calls and handles the trace propagation automatically
+        ConfluentKafkaInstrumentor().instrument()
 
         # ---- Instrument SQLAlchemy ---
         # It will automatically detect your engine and trace all queries
