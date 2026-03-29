@@ -1,4 +1,30 @@
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: food_delivery_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.docker
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: "127.0.0.1:24224"
+        tag: "food-delivery.backend"
+        fluentd-async: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - food_delivery_net
+
   db:
     image: postgres:16-alpine
     container_name: food_delivery_db

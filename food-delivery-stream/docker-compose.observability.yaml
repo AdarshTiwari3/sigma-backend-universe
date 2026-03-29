@@ -56,9 +56,15 @@ services:
       - "24224:24224/udp"
     volumes:
       - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./observability/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
     depends_on:
       elasticsearch:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 24224 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - food_delivery_net
 
