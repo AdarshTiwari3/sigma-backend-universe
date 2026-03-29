@@ -29,11 +29,11 @@ class AppBaseException(Exception):
         }
 
     def to_log(self) -> dict[str, Any]:
-        """Used by the Logger to capture structured data."""
+        """Used by the logger to capture structured error context."""
         return {
             "error_code": self.error_code,
             "http_status": self.status_code,
-            "message": self.message,
+            "error_message": self.message,
             "context": self.payload,
         }
 
