@@ -5,7 +5,7 @@ from src.app.core.config import settings
 router = APIRouter()
 
 
-@router.get("/health", tags=["system"])
+@router.get("/")
 async def health_check():
     return {
         "status": "ok",
