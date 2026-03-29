@@ -1,0 +1,70 @@
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: food_delivery_jaeger
+    restart: always
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - food_delivery_net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: food_delivery_elasticsearch
+    restart: always
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - food_delivery_net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    container_name: food_delivery_kibana
+    restart: always
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - food_delivery_net
+
+  fluent-bit:
+    image: fluent/fluent-bit:3.1
+    container_name: food_delivery_fluent_bit
+    restart: always
+    command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.conf"]
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - food_delivery_net
+
+networks:
+  food_delivery_net:
+    driver: bridge
+
+volumes:
+  elasticsearch_data:
